@@ -1,7 +1,8 @@
-# Definiowanie ścieżki katalogu nadrzędnego, branchy źródłowych i docelowego
+# Definiowanie ścieżki katalogu nadrzędnego, branchy źródłowych, docelowego i referencyjnego
 $parentDirectory = "C:\Sciezka\Do\Katalogu"  # Zmień na swoją ścieżkę
 $sourceBranches = @("branch1", "branch2", "branch3")  # Zmień na listę swoich branchy
 $targetBranch = "main"  # Zmień na nazwę swojego docelowego brancha
+$referenceBranch = "develop"  # Zmień na nazwę brancha referencyjnego, jeśli branch docelowy nie istnieje
 
 # Pobierz wszystkie podkatalogi
 $directories = Get-ChildItem -Path $parentDirectory -Directory
@@ -13,12 +14,20 @@ foreach ($dir in $directories) {
     # Sprawdź, czy to repozytorium Git
     if (Test-Path ".git") {
         Write-Output "Przetwarzanie repozytorium w: $($dir.FullName)"
+        
+        # Sprawdź, czy branch docelowy istnieje
+        $branchExists = git branch --list $targetBranch
 
-        # Przełącz na branch docelowy
-        git checkout $targetBranch
+        if (-not $branchExists) {
+            Write-Output "Branch $targetBranch nie istnieje. Tworzenie na podstawie brancha $referenceBranch..."
+            git checkout -b $targetBranch origin/$referenceBranch
+        } else {
+            # Przełącz na branch docelowy
+            git checkout $targetBranch
 
-        # Aktualizacja brancha docelowego
-        git pull origin $targetBranch
+            # Aktualizacja brancha docelowego
+            git pull origin $targetBranch
+        }
 
         # Merge branchy w odpowiedniej kolejności z weryfikacją zmian
         foreach ($branch in $sourceBranches) {
